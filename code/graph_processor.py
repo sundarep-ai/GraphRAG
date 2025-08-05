@@ -18,7 +18,7 @@ class Entity:
     entity_name: str
     entity_type: str
     entity_description: str
-    card_name: str
+    document_name: str
 
 @dataclass
 class Relationship:
@@ -27,10 +27,10 @@ class Relationship:
     target_entity: str
     relationship_description: str
     relationship_strength: int
-    card_name: str
+    document_name: str
 
 class GraphProcessor:
-    """Handles graph processing, entity extraction, and relationship analysis."""
+    """Handles graph processing, entity extraction, and relationship analysis for any domain."""
     
     def __init__(self, config: Config, azure_client: AzureClient):
         """Initialize graph processor with configuration and Azure client."""
@@ -55,7 +55,7 @@ class GraphProcessor:
         
         Args:
             text_chunks: List of text chunks to process
-            chunk_index: List of card names corresponding to chunks
+            chunk_index: List of document names corresponding to chunks
             
         Returns:
             Tuple of (entities, relationships)
@@ -87,7 +87,7 @@ class GraphProcessor:
         
         Args:
             output: List of raw outputs
-            chunk_index: List of card names
+            chunk_index: List of document names
             
         Returns:
             Tuple of (entities, relationships)
@@ -151,13 +151,13 @@ class GraphProcessor:
             if entity.entity_name in self.config.entity_name_corrections:
                 entity.entity_name = self.config.entity_name_corrections[entity.entity_name]
             
-            # Apply bank name mappings
+            # Apply entity name mappings
             if entity.entity_name in self.config.entity_name_mappings:
                 entity.entity_name = self.config.entity_name_mappings[entity.entity_name]
             
-            # Apply card name mappings
-            if entity.entity_name in self.config.card_name_mappings:
-                entity.entity_name = self.config.card_name_mappings[entity.entity_name]
+            # Apply document name mappings
+            if entity.entity_name in self.config.document_name_mappings:
+                entity.entity_name = self.config.document_name_mappings[entity.entity_name]
             
             # Clean entity name
             entity.entity_name = self.clean_entity_name(entity.entity_name)
@@ -175,17 +175,17 @@ class GraphProcessor:
             Updated relationships
         """
         for relationship in relationships:
-            # Apply bank name mappings
+            # Apply entity name mappings
             if relationship.source_entity in self.config.entity_name_mappings:
                 relationship.source_entity = self.config.entity_name_mappings[relationship.source_entity]
             if relationship.target_entity in self.config.entity_name_mappings:
                 relationship.target_entity = self.config.entity_name_mappings[relationship.target_entity]
             
-            # Apply card name mappings
-            if relationship.source_entity in self.config.card_name_mappings:
-                relationship.source_entity = self.config.card_name_mappings[relationship.source_entity]
-            if relationship.target_entity in self.config.card_name_mappings:
-                relationship.target_entity = self.config.card_name_mappings[relationship.target_entity]
+            # Apply document name mappings
+            if relationship.source_entity in self.config.document_name_mappings:
+                relationship.source_entity = self.config.document_name_mappings[relationship.source_entity]
+            if relationship.target_entity in self.config.document_name_mappings:
+                relationship.target_entity = self.config.document_name_mappings[relationship.target_entity]
             
             # Clean entity names
             relationship.source_entity = self.clean_entity_name(relationship.source_entity)
@@ -222,7 +222,7 @@ class GraphProcessor:
                 'entity_name': e.entity_name,
                 'entity_type': e.entity_type,
                 'entity_description': e.entity_description,
-                'card_name': e.card_name
+                'document_name': e.document_name
             }
             for e in entities
         ]
@@ -235,7 +235,7 @@ class GraphProcessor:
                 'target_entity': r.target_entity,
                 'relationship_description': r.relationship_description,
                 'relationship_strength': r.relationship_strength,
-                'card_name': r.card_name
+                'document_name': r.document_name
             }
             for r in relationships
         ]
@@ -263,7 +263,7 @@ class GraphProcessor:
         
         return entities_df, relationships_df
     
-    def save_graph_data(self, entities_df: pd.DataFrame, relationships_df: pd.DataFrame, version: str = "v4") -> None:
+    def save_graph_data(self, entities_df: pd.DataFrame, relationships_df: pd.DataFrame, version: str = "v1") -> None:
         """
         Save graph data to CSV files.
         
@@ -275,7 +275,7 @@ class GraphProcessor:
         entities_df.to_csv(f'{self.config.graph_data_folder}entities_{version}.csv', index=False)
         relationships_df.to_csv(f'{self.config.graph_data_folder}relationships_{version}.csv', index=False)
     
-    def save_graph_output(self, output: List[str], version: str = "v4") -> str:
+    def save_graph_output(self, output: List[str], version: str = "v1") -> str:
         """
         Save raw graph output to pickle file.
         
@@ -291,7 +291,7 @@ class GraphProcessor:
             pickle.dump(output, f)
         return output_file
     
-    def load_graph_output(self, version: str = "v4") -> List[str]:
+    def load_graph_output(self, version: str = "v1") -> List[str]:
         """
         Load raw graph output from pickle file.
         

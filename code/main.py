@@ -1,5 +1,5 @@
 """
-Main script demonstrating GraphRAG usage.
+Main script demonstrating GraphRAG usage for any domain.
 """
 import os
 import sys
@@ -12,7 +12,7 @@ from graph_rag import GraphRAG
 from config import Config
 
 def main():
-    """Main function demonstrating GraphRAG usage."""
+    """Main function demonstrating GraphRAG usage for any domain."""
     
     # Initialize GraphRAG system
     print("Initializing GraphRAG system...")
@@ -24,20 +24,20 @@ def main():
     print("="*50)
     
     # You would need to provide the actual file paths
-    card_mapping_file = "../data/cardmapping.csv"  # Update with actual path
+    document_mapping_file = "../data/document_mapping.csv"  # Update with actual path
     chunks_file = "../data/chunks_75000_500.csv"   # Update with actual path or None to process PDFs
     
     try:
         # Check if files exist
-        if not os.path.exists(card_mapping_file):
-            print(f"Warning: Card mapping file not found: {card_mapping_file}")
+        if not os.path.exists(document_mapping_file):
+            print(f"Warning: Document mapping file not found: {document_mapping_file}")
             print("Skipping complete pipeline example...")
         else:
             # Run complete pipeline
             results = graph_rag.run_complete_pipeline(
-                card_mapping_file=card_mapping_file,
+                document_mapping_file=document_mapping_file,
                 chunks_file=chunks_file,  # Set to None to process PDFs
-                version="v4"
+                version="v1"
             )
             
             # Print results summary
@@ -54,11 +54,11 @@ def main():
             print(f"\nEntity Statistics:")
             print(f"- Total entities: {entity_stats['total_entities']}")
             print(f"- Unique entities: {entity_stats['unique_entities']}")
-            print(f"- Cards covered: {entity_stats['cards_covered']}")
+            print(f"- Documents covered: {entity_stats['documents_covered']}")
             
             print(f"\nRelationship Statistics:")
             print(f"- Total relationships: {relationship_stats['total_relationships']}")
-            print(f"- Cards covered: {relationship_stats['cards_covered']}")
+            print(f"- Documents covered: {relationship_stats['documents_covered']}")
             
             # Export results
             graph_rag.export_results(
@@ -85,13 +85,13 @@ def main():
             
             # Extract graph data
             print("Extracting graph data...")
-            entities_df, relationships_df = graph_rag.extract_graph_data(chunks_file, "v4")
+            entities_df, relationships_df = graph_rag.extract_graph_data(chunks_file, "v1")
             
             # Generate embeddings
             print("Generating embeddings...")
-            relationships_file = f'{graph_rag.config.graph_data_folder}relationships_v4.csv'
+            relationships_file = f'{graph_rag.config.graph_data_folder}relationships_v1.csv'
             if os.path.exists(relationships_file):
-                embeddings_file = graph_rag.generate_embeddings(relationships_file, "v4")
+                embeddings_file = graph_rag.generate_embeddings(relationships_file, "v1")
                 
                 # Analyze similarities
                 print("Analyzing similarities...")
@@ -102,8 +102,8 @@ def main():
                 )
                 
                 # Print similarity statistics
-                for threshold, card_pairs in similarity_pairs.items():
-                    total_pairs = sum(len(pairs) for pairs in card_pairs.values())
+                for threshold, document_pairs in similarity_pairs.items():
+                    total_pairs = sum(len(pairs) for pairs in document_pairs.values())
                     print(f"Threshold {threshold}: {total_pairs} total pairs")
         
         else:
@@ -113,17 +113,17 @@ def main():
     except Exception as e:
         print(f"Error in individual steps: {e}")
     
-    # Example 3: Similarity comparison
+    # Example 3: Similarity comparison (Credit Card Example)
     print("\n" + "="*50)
-    print("EXAMPLE 3: Similarity Comparison")
+    print("EXAMPLE 3: Similarity Comparison (Credit Card Domain)")
     print("="*50)
     
     try:
-        # Example relationship descriptions
+        # Example relationship descriptions for credit card domain
         text_1 = "The Chase Sapphire Preferred Card offers 2x points on travel and dining"
         text_2 = "Chase Sapphire Preferred earns 2 points per dollar on travel and dining purchases"
         
-        print(f"Comparing relationships:")
+        print(f"Comparing relationships (Credit Card Domain):")
         print(f"Text 1: {text_1}")
         print(f"Text 2: {text_2}")
         
@@ -143,6 +143,68 @@ def main():
     
     except Exception as e:
         print(f"Error in similarity comparison: {e}")
+    
+    # Example 4: Product Comparison Example
+    print("\n" + "="*50)
+    print("EXAMPLE 4: Similarity Comparison (Product Domain)")
+    print("="*50)
+    
+    try:
+        # Example relationship descriptions for product domain
+        text_1 = "iPhone 15 Pro features a 6.1-inch Super Retina XDR display"
+        text_2 = "The iPhone 15 Pro comes with a 6.1-inch Super Retina XDR screen"
+        
+        print(f"Comparing relationships (Product Domain):")
+        print(f"Text 1: {text_1}")
+        print(f"Text 2: {text_2}")
+        
+        is_similar = graph_rag.compare_relationship_similarity(text_1, text_2)
+        print(f"Similar: {is_similar}")
+        
+        # Another example
+        text_3 = "The laptop has 16GB RAM and 512GB SSD storage"
+        text_4 = "This computer includes 16GB of memory and 512GB solid state drive"
+        
+        print(f"\nComparing relationships:")
+        print(f"Text 1: {text_3}")
+        print(f"Text 2: {text_4}")
+        
+        is_similar_2 = graph_rag.compare_relationship_similarity(text_3, text_4)
+        print(f"Similar: {is_similar_2}")
+    
+    except Exception as e:
+        print(f"Error in product similarity comparison: {e}")
+    
+    # Example 5: Legal Document Example
+    print("\n" + "="*50)
+    print("EXAMPLE 5: Similarity Comparison (Legal Domain)")
+    print("="*50)
+    
+    try:
+        # Example relationship descriptions for legal domain
+        text_1 = "The contract requires 30 days notice for termination"
+        text_2 = "Termination of this agreement requires 30 days written notice"
+        
+        print(f"Comparing relationships (Legal Domain):")
+        print(f"Text 1: {text_1}")
+        print(f"Text 2: {text_2}")
+        
+        is_similar = graph_rag.compare_relationship_similarity(text_1, text_2)
+        print(f"Similar: {is_similar}")
+        
+        # Another example
+        text_3 = "The party shall pay damages for breach of contract"
+        text_4 = "Damages must be paid by the party who breaches the agreement"
+        
+        print(f"\nComparing relationships:")
+        print(f"Text 1: {text_3}")
+        print(f"Text 2: {text_4}")
+        
+        is_similar_2 = graph_rag.compare_relationship_similarity(text_3, text_4)
+        print(f"Similar: {is_similar_2}")
+    
+    except Exception as e:
+        print(f"Error in legal similarity comparison: {e}")
     
     print("\n" + "="*50)
     print("GraphRAG Demo Completed")

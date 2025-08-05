@@ -18,7 +18,7 @@ class AzureConfig:
     embedding_deployment: str = "text-embedding-3-small"
     api_version: str = "2024-12-01-preview"
     embedding_api_version: str = "2024-02-01"
-    system_prompt: str = "You are an expert graph assistant that extracts entities and relationships from credit card benefits text chunks accurately."
+    system_prompt: str = "You are an expert graph assistant that extracts entities and relationships from document text chunks accurately."
     
     def __post_init__(self):
         # Load environment variables
@@ -47,6 +47,11 @@ class ProcessingConfig:
     max_retries: int = 3
     retry_delay: int = 30
     similarity_threshold: float = 0.7
+    similarity_thresholds: List[float] = None
+    
+    def __post_init__(self):
+        if self.similarity_thresholds is None:
+            self.similarity_thresholds = [0.85, 0.90, 0.95]
 
 
 @dataclass
@@ -116,6 +121,11 @@ class Config:
         self.data = self.document_processing.pdf_data_path
         self.output_data = "../output_data/"
         self.graph_data_folder = "../output_data/graph_data/"
+        
+        # Entity name mappings for cleaning and normalization
+        self.entity_name_mappings = {}
+        self.entity_name_corrections = {}
+        self.document_name_mappings = {}
     
     def get_output_filename(self, chunk_size: int, chunk_overlap: int) -> str:
         """Generate output filename for chunks."""

@@ -32,7 +32,7 @@ class SimilarityPair:
     target_entity_2: str
 
 class EmbeddingProcessor:
-    """Handles embedding generation and similarity analysis."""
+    """Handles embedding generation and similarity analysis for any domain."""
     
     def __init__(self, config: Config, azure_client: AzureClient):
         """Initialize embedding processor with configuration and Azure client."""
@@ -65,7 +65,7 @@ class EmbeddingProcessor:
         
         return output
     
-    def save_embeddings(self, embeddings: List[List[float]], version: str = "v4") -> str:
+    def save_embeddings(self, embeddings: List[List[float]], version: str = "v1") -> str:
         """
         Save embeddings to pickle file.
         
@@ -81,7 +81,7 @@ class EmbeddingProcessor:
             pickle.dump(embeddings, f)
         return output_file
     
-    def load_embeddings(self, version: str = "v4") -> List[List[float]]:
+    def load_embeddings(self, version: str = "v1") -> List[List[float]]:
         """
         Load embeddings from pickle file.
         
@@ -164,22 +164,22 @@ class EmbeddingProcessor:
         
         return matches.sort_values(by="similarity", ascending=False)
     
-    def find_similarity_pairs_by_card(self, 
-                                     data: pd.DataFrame, 
-                                     threshold: float = 0.90) -> Dict[str, pd.DataFrame]:
+    def find_similarity_pairs_by_document(self, 
+                                         data: pd.DataFrame, 
+                                         threshold: float = 0.90) -> Dict[str, pd.DataFrame]:
         """
-        Find similarity pairs grouped by card name.
+        Find similarity pairs grouped by document name.
         
         Args:
             data: DataFrame containing relationships and embeddings
             threshold: Similarity threshold
             
         Returns:
-            Dictionary mapping card names to similarity pairs
+            Dictionary mapping document names to similarity pairs
         """
         pairs = {}
-        for card, group in data.groupby("card_name"):
-            pairs[card] = self.get_high_similarity_pairs(group, threshold=threshold)
+        for document, group in data.groupby("document_name"):
+            pairs[document] = self.get_high_similarity_pairs(group, threshold=threshold)
         return pairs
     
     def find_similarity_pairs_multiple_thresholds(self, 
@@ -193,14 +193,14 @@ class EmbeddingProcessor:
             thresholds: List of similarity thresholds
             
         Returns:
-            Dictionary mapping thresholds to card-based similarity pairs
+            Dictionary mapping thresholds to document-based similarity pairs
         """
         if thresholds is None:
             thresholds = self.config.processing.similarity_thresholds
         
         all_pairs = {}
         for threshold in thresholds:
-            all_pairs[threshold] = self.find_similarity_pairs_by_card(data, threshold)
+            all_pairs[threshold] = self.find_similarity_pairs_by_document(data, threshold)
         
         return all_pairs
     
@@ -218,7 +218,7 @@ class EmbeddingProcessor:
             List of text pairs
         """
         pairs = []
-        for card, group in data.groupby("card_name"):
+        for document, group in data.groupby("document_name"):
             sim_pairs = self.get_high_similarity_pairs(group, threshold=threshold)
             text_1 = sim_pairs.text_1
             text_2 = sim_pairs.text_2
@@ -247,8 +247,8 @@ class EmbeddingProcessor:
         
         for threshold in thresholds:
             total = 0
-            for card in data.card_name.unique():
-                total += all_pairs[threshold][card].shape[0]
+            for document in data.document_name.unique():
+                total += all_pairs[threshold][document].shape[0]
             statistics[threshold] = total
         
         return statistics

@@ -32,7 +32,7 @@ class TextChunk:
     metadata: Dict[str, Any] = None
 
 class DocumentProcessor:
-    """Handles document processing, PDF conversion, and text chunking."""
+    """Handles document processing, PDF conversion, and text chunking for any domain."""
     
     def __init__(self, config: Config):
         """Initialize document processor with configuration."""

@@ -1,5 +1,5 @@
 """
-Main GraphRAG class that orchestrates the entire workflow.
+Main GraphRAG class that orchestrates the entire workflow for any domain.
 """
 import os
 import pandas as pd
@@ -16,7 +16,7 @@ from .prompts import PromptTemplates
 class GraphRAG:
     """
     Main GraphRAG class that orchestrates the entire workflow for processing
-    credit card documents and extracting entities and relationships.
+    documents and extracting entities and relationships from any domain.
     """
     
     def __init__(self, config: Optional[Config] = None):
@@ -40,18 +40,18 @@ class GraphRAG:
         Path(self.config.output_data).mkdir(exist_ok=True)
         Path(self.config.graph_data_folder).mkdir(exist_ok=True)
     
-    def process_documents(self, card_mapping_file: str) -> str:
+    def process_documents(self, document_mapping_file: str) -> str:
         """
         Process PDF documents and create text chunks.
         
         Args:
-            card_mapping_file: Path to CSV file with card name mappings
+            document_mapping_file: Path to CSV file with document name mappings
             
         Returns:
             Path to saved chunks CSV file
         """
         print("Starting document processing...")
-        chunks = self.document_processor.process_pdf_folder(card_mapping_file)
+        chunks = self.document_processor.process_pdf_folder(document_mapping_file)
         output_file = self.document_processor.save_chunks_to_csv(chunks)
         print(f"Document processing completed. Output saved to: {output_file}")
         return output_file
@@ -68,7 +68,7 @@ class GraphRAG:
         """
         return self.document_processor.load_chunks_from_csv(chunks_file)
     
-    def extract_graph_data(self, chunks_file: str, version: str = "v4") -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def extract_graph_data(self, chunks_file: str, version: str = "v1") -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Extract entities and relationships from text chunks.
         
@@ -84,7 +84,7 @@ class GraphRAG:
         # Load chunks
         data = self.load_chunks(chunks_file)
         text_chunks = list(data['text_chunk'])
-        chunk_index = list(data['bank_card_name'])
+        chunk_index = list(data['document_name'])
         
         # Extract entities and relationships
         entities, relationships = self.graph_processor.extract_entities_and_relationships(
@@ -104,7 +104,7 @@ class GraphRAG:
         print(f"Graph data extraction completed. Found {len(entities)} entities and {len(relationships)} relationships.")
         return entities_df, relationships_df
     
-    def generate_embeddings(self, relationships_file: str, version: str = "v4") -> str:
+    def generate_embeddings(self, relationships_file: str, version: str = "v1") -> str:
         """
         Generate embeddings for relationship descriptions.
         
@@ -142,7 +142,7 @@ class GraphRAG:
             thresholds: List of similarity thresholds
             
         Returns:
-            Dictionary mapping thresholds to card-based similarity pairs
+            Dictionary mapping thresholds to document-based similarity pairs
         """
         print("Starting similarity analysis...")
         
@@ -167,14 +167,14 @@ class GraphRAG:
         return similarity_pairs
     
     def run_complete_pipeline(self, 
-                             card_mapping_file: str, 
+                             document_mapping_file: str, 
                              chunks_file: Optional[str] = None,
-                             version: str = "v4") -> Dict[str, Any]:
+                             version: str = "v1") -> Dict[str, Any]:
         """
         Run the complete GraphRAG pipeline.
         
         Args:
-            card_mapping_file: Path to CSV file with card name mappings
+            document_mapping_file: Path to CSV file with document name mappings
             chunks_file: Path to existing chunks file (optional, will process PDFs if not provided)
             version: Version suffix for output files
             
@@ -187,7 +187,7 @@ class GraphRAG:
         # Step 1: Process documents (if chunks file not provided)
         if chunks_file is None:
             print("\n=== Step 1: Document Processing ===")
-            chunks_file = self.process_documents(card_mapping_file)
+            chunks_file = self.process_documents(document_mapping_file)
         else:
             print(f"\n=== Step 1: Using existing chunks file: {chunks_file} ===")
         
@@ -247,8 +247,8 @@ class GraphRAG:
             'total_entities': len(entities_df),
             'unique_entities': entities_df['entity_name'].nunique(),
             'entity_types': entities_df['entity_type'].value_counts().to_dict(),
-            'cards_covered': entities_df['card_name'].nunique(),
-            'entities_per_card': entities_df.groupby('card_name')['entity_name'].count().to_dict()
+            'documents_covered': entities_df['document_name'].nunique(),
+            'entities_per_document': entities_df.groupby('document_name')['entity_name'].count().to_dict()
         }
         return stats
     
@@ -266,8 +266,8 @@ class GraphRAG:
             'total_relationships': len(relationships_df),
             'unique_source_entities': relationships_df['source_entity'].nunique(),
             'unique_target_entities': relationships_df['target_entity'].nunique(),
-            'cards_covered': relationships_df['card_name'].nunique(),
-            'relationships_per_card': relationships_df.groupby('card_name').size().to_dict(),
+            'documents_covered': relationships_df['document_name'].nunique(),
+            'relationships_per_document': relationships_df.groupby('document_name').size().to_dict(),
             'strength_distribution': relationships_df['relationship_strength'].value_counts().sort_index().to_dict()
         }
         return stats
@@ -304,13 +304,13 @@ class GraphRAG:
             json.dump(relationship_stats, f, indent=2)
         
         # Export similarity pairs
-        for threshold, card_pairs in similarity_pairs.items():
+        for threshold, document_pairs in similarity_pairs.items():
             threshold_dir = f"{output_dir}/similarity_pairs_{threshold}"
             Path(threshold_dir).mkdir(exist_ok=True)
             
-            for card_name, pairs_df in card_pairs.items():
+            for document_name, pairs_df in document_pairs.items():
                 if len(pairs_df) > 0:
-                    safe_card_name = card_name.replace('/', '_').replace('\\', '_')
-                    pairs_df.to_csv(f"{threshold_dir}/{safe_card_name}.csv", index=False)
+                    safe_document_name = document_name.replace('/', '_').replace('\\', '_')
+                    pairs_df.to_csv(f"{threshold_dir}/{safe_document_name}.csv", index=False)
         
         print(f"Results exported to {output_dir}/") 
